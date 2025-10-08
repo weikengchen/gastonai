@@ -1,0 +1,117 @@
+package com.chenweikeng.gastonai;
+
+import com.google.common.base.Optional;
+import com.mojang.authlib.minecraft.client.MinecraftClient;
+import net.fabricmc.api.ModInitializer;
+
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.Math.min;
+
+public class GastonAI implements ModInitializer {
+	public static final String MOD_ID = "gastonai";
+
+	// This logger is used to write text to the console and the log file.
+	// It is considered best practice to use your mod id as the logger's name.
+	// That way, it's clear which mod wrote info, warnings, and errors.
+	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+    public static final ConcurrentHashMap<String, ScoreBoardEntry> MAP = new ConcurrentHashMap<>();
+
+	@Override
+	public void onInitialize() {
+		LOGGER.info("Hello I am Gaston!");
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            var gastonai = ClientCommandManager.literal("gastonai").executes(
+                    command -> {
+                        List<Map.Entry<Strategy, Integer>> list = new ArrayList<>();
+                        for(var entry : MAP.entrySet()) {
+                            int time = TimeOwner.getTime(entry.getKey());
+                            if(time == 99999) {
+                                LOGGER.error("Unknown ride {}", entry.getKey());
+                                return 0;
+                            }
+
+                            Optional<Integer> larger = Optional.absent();
+                            ScoreBoardEntry value = entry.getValue();
+
+                            if(value.Scar >= value.Hook) {
+                                larger = Optional.of(value.Scar);
+                            }
+                            if(value.Cruella >= value.Hook) {
+                                if(larger.isPresent()) {
+                                    if(value.Cruella < larger.get()) {
+                                        larger = Optional.of(value.Cruella);
+                                    }
+                                } else {
+                                    larger = Optional.of(value.Cruella);
+                                }
+                            }
+                            if(value.Hades >= value.Hook) {
+                                if(larger.isPresent()) {
+                                    if(value.Hades < larger.get()) {
+                                        larger = Optional.of(value.Hades);
+                                    }
+                                } else {
+                                    larger = Optional.of(value.Hades);
+                                }
+                            }
+                            if(value.Queen >= value.Hook) {
+                                if(larger.isPresent()) {
+                                    if(value.Queen < larger.get()) {
+                                        larger = Optional.of(value.Queen);
+                                    }
+                                } else {
+                                    larger = Optional.of(value.Queen);
+                                }
+                            }
+                            if(value.Maleficent >= value.Hook) {
+                                if(larger.isPresent()) {
+                                    if(value.Maleficent < larger.get()) {
+                                        larger = Optional.of(value.Maleficent);
+                                    }
+                                } else {
+                                    larger = Optional.of(value.Maleficent);
+                                }
+                            }
+
+                            if(larger.isPresent()) {
+                                list.add(Map.entry(new Strategy(entry.getKey(), larger.get() - value.Hook + 1), (larger.get() - value.Hook + 1) * time));
+                            }
+                        }
+
+                        list.sort(Map.Entry.comparingByValue());
+
+                        Player player = Minecraft.getInstance().player;
+                        assert player != null;
+
+                        StringBuilder out = new StringBuilder();
+                        for(int i = 0; i < min(list.size(), 10); i++) {
+                            out.append(String.format("Ride %s for %d times\n", list.get(i).getKey().rideName(), list.get(i).getKey().times()));
+                        }
+                        String outResult = out.toString();
+
+                        command.getSource().sendFeedback(Component.literal(outResult));
+
+                        return 0;
+                    }
+            );
+            dispatcher.register(gastonai);
+        });
+	}
+}
