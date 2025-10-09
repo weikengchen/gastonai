@@ -2,6 +2,7 @@ package com.chenweikeng.gastonai.mixin;
 
 import com.chenweikeng.gastonai.GastonAI;
 import com.chenweikeng.gastonai.ScoreBoardEntry;
+import com.chenweikeng.gastonai.TeamRanks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.component.DataComponents;
@@ -37,6 +38,10 @@ public class GastonMessageMixin {
                                 if(!list.isEmpty()) {
                                     String rideName = list.getFirst().getString();
                                     GastonAI.LOGGER.info(rideName);
+                                    GastonAI.RANKS.put(
+                                            rideName,
+                                            TeamRanks.parse(lines)
+                                    );
                                     GastonAI.MAP.put(
                                             rideName,
                                             ScoreBoardEntry.fromLore(lines)

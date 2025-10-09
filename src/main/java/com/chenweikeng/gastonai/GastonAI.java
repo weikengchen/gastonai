@@ -1,7 +1,6 @@
 package com.chenweikeng.gastonai;
 
 import com.google.common.base.Optional;
-import com.mojang.authlib.minecraft.client.MinecraftClient;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -12,9 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +26,8 @@ public class GastonAI implements ModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+    public static final ConcurrentHashMap<String, List<TeamRanks>> RANKS = new ConcurrentHashMap<>();
+
     public static final ConcurrentHashMap<String, ScoreBoardEntry> MAP = new ConcurrentHashMap<>();
 
 	@Override
@@ -37,7 +35,36 @@ public class GastonAI implements ModInitializer {
 		LOGGER.info("Hello I am Gaston!");
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            var gastonai = ClientCommandManager.literal("gastonai").executes(
+            var gastonai = ClientCommandManager.literal("gastonai");
+
+            gastonai.then(ClientCommandManager.literal("count").executes(
+                    command -> {
+                        int hookCount = 0;
+                        for(var entry: RANKS.entrySet()){
+                            List<TeamRanks> ranks = RANKS.get(entry.getKey());
+                            if(!ranks.isEmpty() && ranks.getFirst().equals(TeamRanks.Hook)) {
+                                hookCount += 5;
+                            }
+                            if(ranks.size() > 1 && ranks.get(1).equals(TeamRanks.Hook)) {
+                                hookCount += 4;
+                            }
+                            if(ranks.size() > 2 && ranks.get(2).equals(TeamRanks.Hook)) {
+                                hookCount += 3;
+                            }
+                            if(ranks.size() > 3 && ranks.get(3).equals(TeamRanks.Hook)) {
+                                hookCount += 2;
+                            }
+                            if(ranks.size() > 4 && ranks.get(4).equals(TeamRanks.Hook)) {
+                                hookCount += 1;
+                            }
+                        }
+                        command.getSource().sendFeedback(Component.literal(
+                                String.format("Hook has %d treats", hookCount)
+                        ));
+                        return 0;
+                    }
+            ));
+            gastonai.then(ClientCommandManager.literal("compute").executes(
                     command -> {
                         List<Map.Entry<Strategy, Integer>> list = new ArrayList<>();
                         for(var entry : MAP.entrySet()) {
@@ -110,7 +137,7 @@ public class GastonAI implements ModInitializer {
 
                         return 0;
                     }
-            );
+            ));
             dispatcher.register(gastonai);
         });
 	}
