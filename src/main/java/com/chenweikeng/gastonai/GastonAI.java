@@ -5,8 +5,14 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +35,8 @@ public class GastonAI implements ModInitializer {
     public static final ConcurrentHashMap<String, List<TeamRanks>> RANKS = new ConcurrentHashMap<>();
 
     public static final ConcurrentHashMap<String, ScoreBoardEntry> MAP = new ConcurrentHashMap<>();
+
+    public static String TEXT = "";
 
 	@Override
 	public void onInitialize() {
@@ -133,6 +141,8 @@ public class GastonAI implements ModInitializer {
                         }
                         String outResult = out.toString();
 
+                        GastonAI.TEXT = outResult;
+
                         command.getSource().sendFeedback(Component.literal(outResult));
 
                         return 0;
@@ -140,5 +150,28 @@ public class GastonAI implements ModInitializer {
             ));
             dispatcher.register(gastonai);
         });
+
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.CHAT,
+                ResourceLocation.fromNamespaceAndPath(GastonAI.MOD_ID, "before_chat"),
+                GastonAI::render);
 	}
+
+    public static void render(GuiGraphics context, DeltaTracker tickCounter){
+        int color = 0xFFFF0000; // Red
+
+        if(!GastonAI.TEXT.isEmpty()) {
+            String[] lines = GastonAI.TEXT.split("\\R");
+
+            for(int i = 0; i < lines.length; i++) {
+                context.drawString(
+                        Minecraft.getInstance().font,
+                        lines[i],
+                        50,
+                        50 + i * 10,
+                        color
+                );
+            }
+        }
+    }
 }
